@@ -1,0 +1,10 @@
+# number: Arbitrary service number. Access logs are recorded using this number. It needs to be added to the Totum schema in the ttm__services table, in the h_services_number field.
+# key: Access key. Generate a random set of numbers and letters and add it to the Totum schema in the ttm__services table, in the h_services_key field.
+# back_url: The HOST of your Totum server with the http:// or https:// protocol.
+# check_back_url_certificate: true | false. If false, the validity check of the SSL certificate for your Totum will be disabled. This is necessary for cases when Totum is installed without a certificate, using an IP address.
+
+# You can add multiple Totum setups to one Services server. To do this, add a server configuration line in a similar format on a new line.
+# If you want to disable the server, comment out the line.
+
+{"number":393832984,"key":"tlBY2M8iCKJJgfdyGdsftn4dOXl3gm7","back_url":"https://withssl.totum.online","check_back_url_certificate":true}
+# {"number":393832985,"key":"Jhsdgysrtwep73hddsOdwrVgksdRasd","back_url":"http://withoutssl.totum.online","check_back_url_certificate":false}
