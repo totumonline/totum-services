@@ -30,7 +30,7 @@ $dataFromClient = $serviceData['data'];
 
 $comment = $dataFromClient['comment'] ?? null;
 
-$Conf = Conf::init();
+$Conf = Conf::init($serviceData['host']);
 
 $resultFile = $Conf->create_tmp_file('../tmp_files', 'pdf_result', 'pdf', $accountNumber, $cutHash);
 try {

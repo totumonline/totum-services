@@ -18,7 +18,7 @@ if (($dirs[1] ?? false) === 'connectChecker') {
     } elseif (empty($inputData['key'])) {
         $error = 'Key is empty';
     } else {
-        $Conf = Conf::init();
+        $Conf = Conf::init($_SERVER['HTTP_HOST']);
         try {
             $settings=$Conf->getSettings($inputData['number'], $inputData['key']);
 
@@ -71,7 +71,7 @@ switch ($dirs[1] ?? false) {
         die('Not correct or not active service type');
 }
 
-$Conf = Conf::init();
+$Conf = Conf::init($_SERVER['HTTP_HOST']);
 
 /*Проверка авторизации*/
 
@@ -95,6 +95,7 @@ switch ($service) {
                 'checkSSl' => $accountData['check_back_url_certificate'] === 'true',
                 'data' => $inputData['data'],
                 'hash' => $inputData['hash'],
+                'host' => $_SERVER['HTTP_HOST'],
             ], JSON_UNESCAPED_UNICODE);
 
         $file = tempnam('../tmp_files', 'data_' . substr($inputData['hash'], 0, 16));

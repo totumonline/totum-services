@@ -43,7 +43,7 @@ $pdf = $dataFromClient['pdf'] ?? false;
 $data = $dataFromClient['data'] ?? [];
 
 
-$Conf = Conf::init();
+$Conf = Conf::init($serviceData['host']);
 
 $blocks = [];
 $rows = [];

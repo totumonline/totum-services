@@ -11,6 +11,12 @@ class ConfigParent
     protected $settings;
     protected $host;
 
+
+    public function __construct($host = null)
+    {
+        $this->host = $this->host ?? $host;
+    }
+
     public function getSettings(string $number, string $key): array
     {
         $settings = $this->settings ?? $this->settings = $this->parseSettingsFile($this->dir . 'services_list');

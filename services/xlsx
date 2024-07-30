@@ -28,7 +28,7 @@ $dataFromClient = $serviceData['data'];
 
 $comment = $dataFromClient['comment'] ?? null;
 
-$Conf = Conf::init();
+$Conf = Conf::init($serviceData['host']);
 $pdf = $dataFromClient['pdf'] ?? false;
 
 /*Save template file*/

@@ -8,10 +8,10 @@ class Conf extends ConfigParent
 {
     protected static ?Conf $Conf = null;
 
-    protected $host='';
-    static function init()
+    protected $host;
+    static function init($host = null)
     {
-        return static::$Conf ?? (static::$Conf = new static());
+        return static::$Conf ?? (static::$Conf = new static($host));
     }
 
 
