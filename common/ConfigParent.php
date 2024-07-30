@@ -101,7 +101,7 @@ class ConfigParent
         );
 
         $back_url_answer = file_get_contents($back_url . '/ServicesAnswer' . ($answer_key_path ? '/' . $answer_key_path : ''),
-            null,
+            false,
             $context);
 
         if ($back_url_answer === false) {
