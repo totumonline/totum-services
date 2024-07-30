@@ -1,0 +1,158 @@
+#!/usr/bin/env php
+<?php
+
+use PhpOffice\PhpWord\IOFactory;
+use PhpOffice\PhpWord\Settings;
+use PhpOffice\PhpWord\TemplateProcessor;
+use services\common\WordMPDF;
+use services\config\Conf;
+
+require_once '../vendor/autoload.php';
+
+$serviceType = 'docx';
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+/*$data = [
+    'var1' => 'test1',
+    'var2' => 'test2',
+    'block_1' => [
+        ['block_var1' => 'Строка 1 значение 1', 'block_var2' => 'Строка 1 значение 2'],
+        ['block_var1' => 'Строка 2 значение 1', 'block_var2' => 'Строка 2 значение 2'],
+    ],
+    'row_data0' => [
+        ['row_data0' => 'провека', 'row_data1' => 'test1', 'row_data2' => 'test1', 'row_data3' => 'test1'],
+        ['row_data0' => 'провека2', 'row_data1' => 'test2', 'row_data2' => 'test2', 'row_data3' => 'test2'],
+    ]
+];*/
+
+$serviceData = json_decode(file_get_contents('php://stdin'), true);
+
+$accountNumber = $serviceData['number'];
+$back_url = $serviceData['back_url'];
+$checkSsl = $serviceData['checkSSl'];
+$hash = $serviceData['hash'];
+$cutHash = md5($hash);
+$answer_key_path = $serviceData['answer_key_path'];
+$dataFromClient = $serviceData['data'];
+
+$comment = $dataFromClient['comment'] ?? null;
+
+$pdf = $dataFromClient['pdf'] ?? false;
+$data = $dataFromClient['data'] ?? [];
+
+
+$Conf = Conf::init();
+
+$blocks = [];
+$rows = [];
+$images = [];
+foreach ($data as $k => $v) {
+    if (is_array($v)) {
+        if (str_starts_with($k, 'block_')) {
+            $blocks[$k] = $v;
+
+        } elseif (key_exists('type', $v)) {
+            if ($v['type'] === 'image' && !empty($v['filestring'])) {
+                $v['path'] = $Conf->create_tmp_file('../tmp_files', 'image', $v['imagetype'], $accountNumber, $cutHash);
+                file_put_contents($v['path'], base64_decode($v['filestring']));
+                unset($v['filestring']);
+                $images[$k] = $v;
+            }
+            unset($data[$k]);
+        } else {
+            foreach ($v as $rnum=>&$row) {
+                foreach ($row as $_k => &$_v) {
+                    if (is_array($_v) && key_exists('type', $_v)) {
+                        if ($_v['type'] === 'image' && !empty($_v['filestring'])) {
+                            $_v['path'] = $Conf->create_tmp_file('../tmp_files',
+                                'image',
+                                $_v['imagetype'],
+                                $accountNumber,
+                                $cutHash);
+                            file_put_contents($_v['path'], base64_decode($_v['filestring']));
+                            unset($_v['filestring']);
+                            $images['__image_'.$rnum.'_'.$k.'_'.$_k] = $_v;
+                            $_v = '${__image_'.$rnum.'_'.$k.'_'.$_k. '}';
+                        } else {
+                            $_v = '';
+                        }
+                    }
+                }
+                unset($_v);
+            }
+            unset($row);
+
+            $rows[$k] = $v;
+        }
+        unset($data[$k]);
+    }
+}
+/*Save template file*/
+$templateFile = $Conf->create_tmp_file('../tmp_files', 'docx_template_', 'xlsx', $accountNumber, $cutHash);
+file_put_contents($templateFile, base64_decode($dataFromClient['template']));
+//$templateFile = __DIR__ . '/../tmp_files/test.docx';
+try {
+    $templateProcessor = new TemplateProcessor($templateFile);
+    $templateProcessor->setValues($data);
+
+    foreach ($blocks as $blockName => $values) {
+        try {
+            $templateProcessor->cloneBlock($blockName, null, true, false, $values);
+        } catch (\Exception) {
+        }
+    }
+    foreach ($rows as $blockName => $values) {
+        try {
+            $templateProcessor->cloneRowAndSetValues($blockName, $values);
+        } catch (\Exception) {
+        }
+
+    }
+    foreach ($images as $k => $i) {
+          $templateProcessor->setImageValue($k, $i);
+    }
+    $resultFile = $Conf->create_tmp_file('../tmp_files', 'docx_result_', 'docx', $accountNumber, $cutHash);
+
+    $templateProcessor->saveAs($resultFile);
+
+    if ($pdf) {
+        if (filesize($resultFile)) {
+
+            `libreoffice --headless --convert-to pdf:writer_pdf_Export --outdir  ../tmp_files $resultFile`;
+            $resultFile = preg_replace('/(\.docx)$/', '.pdf', $resultFile);
+
+
+            /*$wordPdf = PhpOffice\PhpWord\IOFactory::load($docxFile);
+            $resultFile = $Conf->create_tmp_file('../tmp_files', 'docx_result_', 'pdf', $accountNumber, $cutHash);
+            $pdfWriter = new WordMPDF($wordPdf);
+            if (is_array($pdf)) {
+                $pdfWriter->setPDFOptions($pdf);
+            }
+            $pdfWriter->save($resultFile);*/
+
+        }
+    }
+
+
+} catch (\Exception $exception) {
+    $error = $exception->getMessage();
+}
+
+list($back_url_answer, $response_header) = $Conf->sendAnswer($back_url,
+    $checkSsl,
+    $hash,
+    $error ?? null,
+    $resultFile ?? null,
+    $answer_key_path
+);
+
+$Conf->billing($accountNumber,
+    $serviceType,
+    $back_url_answer,
+    $response_header,
+    $error ?? null,
+    !!($pdf) && empty($error),
+    $comment
+);

@@ -1,0 +1,107 @@
+#!/usr/bin/env php
+<?php
+
+
+use Mpdf\Mpdf;
+use PhpOffice\PhpWord\Settings;
+use services\common\CustomContentLoader;
+use services\common\CustomHttpClient;
+use services\common\WordMPDF;
+use services\config\Conf;
+use Dompdf\Dompdf;
+
+
+require_once '../vendor/autoload.php';
+
+$serviceType = 'pdf';
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+$serviceData = json_decode(file_get_contents('php://stdin'), true);
+
+$accountNumber = $serviceData['number'];
+$back_url = $serviceData['back_url'];
+$checkSsl = $serviceData['checkSSl'];
+$hash = $serviceData['hash'];
+$cutHash = md5($hash);
+$answer_key_path = $serviceData['answer_key_path'];
+$dataFromClient = $serviceData['data'];
+
+$comment = $dataFromClient['comment'] ?? null;
+
+$Conf = Conf::init();
+
+$resultFile = $Conf->create_tmp_file('../tmp_files', 'pdf_result', 'pdf', $accountNumber, $cutHash);
+try {
+    $filestring = base64_decode($dataFromClient['file']);
+    switch ($dataFromClient['type']) {
+        case 'html':
+            if (!is_array($dataFromClient['pdf'] ?? false)) {
+                $dataFromClient['pdf'] = [];
+            }
+            $config['format'] = $dataFromClient['pdf']['format'] ?? 'A4';
+            $config['orientation'] = ($dataFromClient['pdf']['orientation'] ?? 'P') === 'L' ? 'L' : 'P';
+
+            $mpdf = new Mpdf($config,
+                new \Mpdf\Container\SimpleContainer([
+                    'httpClient' => new CustomHttpClient(),
+                    'localContentLoader' => new CustomContentLoader(),
+                ]));
+
+            $filestring = preg_replace_callback('/<img[^>]+>/', function ($matches) {
+                if (!str_contains($matches[0], 'data:image')) {
+                    return '';
+                }
+                return $matches[0];
+            }, $filestring);
+
+            $mpdf->WriteHTML($filestring);
+            $mpdf->Output($resultFile);
+            break;
+        case 'docx':
+            $inputFile = $Conf->create_tmp_file('../tmp_files', 'pdf_input', 'docx', $accountNumber, $cutHash);
+            file_put_contents($inputFile, $filestring);
+
+            `libreoffice --headless --convert-to pdf:writer_pdf_Export --outdir  ../tmp_files $inputFile`;
+
+            $resultFile = preg_replace('/(\.docx)$/', '.pdf', $inputFile);
+
+           /* $wordPdf = PhpOffice\PhpWord\IOFactory::load($inputFile);
+            $pdfWriter = new WordMPDF($wordPdf);
+            $pdfWriter->save($resultFile);*/
+
+            break;
+        case 'xlsx':
+            $inputFile = $Conf->create_tmp_file('../tmp_files', 'pdf_input', 'xlsx', $accountNumber, $cutHash);
+            file_put_contents($inputFile, $filestring);
+
+          `libreoffice --headless --convert-to pdf:calc_pdf_Export --outdir ../tmp_files $inputFile`;
+
+            $resultFile = preg_replace('/(\.xlsx)$/', '.pdf', $inputFile);
+
+            /*$spreadsheet = PhpOffice\PhpSpreadsheet\IOFactory::load($inputFile);
+            $pdfWriter = new \services\common\ExcelMpdf($spreadsheet);
+            $pdfWriter->save($resultFile);*/
+
+            break;
+    }
+
+} catch (\Exception $exception) {
+    $error = $exception->getMessage();
+}
+
+list($back_url_answer, $response_header) = $Conf->sendAnswer($back_url,
+    $checkSsl,
+    $hash,
+    $error ?? null,
+    $resultFile ?? null,
+    $answer_key_path);
+
+$Conf->billing($accountNumber,
+    $serviceType,
+    $back_url_answer,
+    $response_header,
+    $error ?? null,
+    false,
+    $comment);

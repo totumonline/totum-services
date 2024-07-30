@@ -1,0 +1,5 @@
+/vendor/
+/tmp_files/
+/services/fls/
+./services_list
+./services_log

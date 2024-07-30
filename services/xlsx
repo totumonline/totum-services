@@ -1,0 +1,374 @@
+#!/usr/bin/env php
+<?php
+
+use Mpdf\Mpdf;
+use PhpOffice\PhpSpreadsheet\Cell\Cell;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Worksheet\Row;
+use services\config\Conf;
+use Shuchkin\SimpleXLSX;
+
+require_once '../vendor/autoload.php';
+
+$serviceType = 'xlsx';
+
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+$serviceData = json_decode(file_get_contents('php://stdin'), true);
+
+$accountNumber = $serviceData['number'];
+$back_url = $serviceData['back_url'];
+$checkSsl = $serviceData['checkSSl'];
+$hash = $serviceData['hash'];
+$cutHash = md5($hash);
+$answer_key_path = $serviceData['answer_key_path'];
+$dataFromClient = $serviceData['data'];
+
+$comment = $dataFromClient['comment'] ?? null;
+
+$Conf = Conf::init();
+$pdf = $dataFromClient['pdf'] ?? false;
+
+/*Save template file*/
+
+try {
+
+    if (!empty($dataFromClient['file'])) {
+        $templateFile = $Conf->create_tmp_file('../tmp_files', 'xlsx_for_parser_', 'xlsx', $accountNumber, $cutHash);
+        file_put_contents($templateFile, base64_decode($dataFromClient['file']));
+        $spreadsheet = IOFactory::load($templateFile);
+        $worksheet = $spreadsheet->getActiveSheet();
+        $rowsIterator = $worksheet->getRowIterator(0, null);
+        $data = [];
+        $rowsIterator->next();
+        $maxCellCount = 0;
+        $columns = [];
+        while ($rowsIterator->valid()) {
+            $rowData = [];
+
+            $row = $rowsIterator->current();
+            if (empty($columns)) {
+                $iterator = $row->getCellIterator();
+                foreach ($iterator as $i => $cell) {
+                    $columns[] = $cell->getColumn();
+                }
+            }
+            $iterator = $row->getCellIterator();
+            foreach ($iterator as $i => $cell) {
+                if ($cell !== null) {
+                    /** @var Cell $cell */
+                    $val = $cell->getCalculatedValue();
+                    if ($dataFromClient['f'] ?? false) {
+                        $format = $cell->getStyle()->exportArray();
+                        $rowData[] = ['v' => $val, 'f' => [
+                            'bold' => $format['font']['bold'] ?? false,
+                            'italic' => $format['font']['italic'] ?? false,
+                            'underline' => $format['font']['underline'] ?? 'none',
+                            'color' => $format['font']['color']['argb'] ?? null,
+                            'background' => $format['fill']['startColor']['argb'] ?? null,
+                        ]];
+                    } else {
+                        $rowData[] = $val;
+                    }
+                } else {
+                    $rowData[] = null;
+                }
+            }
+            if ($maxCellCount < count($rowData)) {
+                $maxCellCount = count($rowData);
+            }
+            $data[] = $rowData;
+            $rowsIterator->next();
+        }
+
+        $checkFunction = function ($val) {
+            return null !== $val;
+        };
+        if ($dataFromClient['f'] ?? false) {
+            $checkFunction = function ($val) {
+                return null !== ($val['v'] ?? null);
+            };
+        }
+
+        /*check last rows*/
+        for ($i = count($data) - 1; $i >= 0; $i--) {
+            $row = $data[$i];
+            foreach ($row as $cell) {
+                if ($checkFunction($cell)) {
+                    break 2;
+                }
+            }
+            unset($data[$i]);
+        }
+        /*check last columns*/
+        $maxCellCount = $maxCellCount - 1;
+        $lastMeaningfulColumn = $maxCellCount;
+        for ($iC = $maxCellCount; $iC >= 0; $iC--) {
+            $lastMeaningfulColumn = $iC;
+            for ($i = count($data) - 1; $i >= 0; $i--) {
+                if ($checkFunction($data[$i][$iC] ?? null)) {
+                    break 2;
+                }
+            }
+        }
+        foreach ($data as &$row) {
+            for ($i = 0; $i <= $maxCellCount || $i < count($row); $i++) {
+                if ($i > $lastMeaningfulColumn) {
+                    unset($row[$i]);
+                } else {
+                    $row[$i] = $row[$i] ?? (($dataFromClient['f'] ?? false) ? ['v' => null] : null);
+                }
+            }
+        }
+        unset($row);
+
+        $maxEmptyColumn = -1;
+        foreach ($data[0] as $i => $_) {
+            foreach ($data as $row) {
+                if ($checkFunction($row[$i])) {
+                    break 2;
+                }
+            }
+            $maxEmptyColumn = $i;
+        }
+        foreach ($data as &$row) {
+            for ($i = 0; $i <= $maxEmptyColumn; $i++) {
+                unset($row[$i]);
+            }
+            $row = array_values($row);
+        }
+
+        if ($dataFromClient['c'] ?? false) {
+            foreach ($columns as $i => $column) {
+                if ($i > $lastMeaningfulColumn) {
+                    unset($columns[$i]);
+                } elseif ($i <= $maxEmptyColumn) {
+                    unset($columns[$i]);
+                }
+            }
+            $columns = array_values($columns);
+            array_unshift($data, $columns);
+        }
+
+        $resultFile = $Conf->create_tmp_file('../tmp_files', 'xlsx_parser_result_', 'json', $accountNumber, $cutHash);
+        file_put_contents($resultFile, json_encode($data, JSON_UNESCAPED_UNICODE));
+    } else {
+        if ($dataFromClient['template'] !== '*NEW*') {
+            /*$templateFile = __DIR__ . '/../tmp_files/xlsx_template.xlsx';
+
+    $dataFromClient['data'] = [
+        'some_var_1' => 'Проверка1',
+        'some_var_2' => [
+            ['some_var_2' => 'Проверка 2'],
+            ['some_var_2' => 'Проверка 22'],
+            ['some_var_2' => 'Проверка 222'],
+        ]
+    ];*/
+
+
+            $templateFile = $Conf->create_tmp_file('../tmp_files', 'xlsx_template_', 'xlsx', $accountNumber, $cutHash);
+            file_put_contents($templateFile, base64_decode($dataFromClient['template']));
+            $spreadsheet = IOFactory::load($templateFile);
+        } else {
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        }
+
+
+        $worksheet = $spreadsheet->getActiveSheet();
+
+
+        $add_image = function ($complexObject, $coordinates) use ($worksheet) {
+            $filestring = base64_decode($complexObject['filestring'] ?? '');
+            if (!$filestring) {
+                $worksheet->getCell($coordinates)->getValue('');
+                return;
+            }
+            $drawing = \PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing::fromString($filestring);
+            $drawing->setCoordinates($coordinates);
+            if (!empty($complexObject['height']) && is_numeric($complexObject['height'])) {
+                $drawing->setHeight((int)$complexObject['height']);
+            }
+            if (!empty($complexObject['width']) && is_numeric($complexObject['width'])) {
+                $drawing->setWidth((int)$complexObject['width']);
+            }
+            if (!empty($complexObject['imagetype'])) {
+                $drawing->setMimeType('image/' . strtolower($complexObject['imagetype']));
+            }
+            /*$drawing->setOffsetX(110);
+            $drawing->setRotation(25);
+            $drawing->getShadow()->setVisible(true);
+            $drawing->getShadow()->setDirection(45);*/
+            $drawing->setWorksheet($worksheet);
+        };
+
+
+        if ($dataFromClient['template'] === '*NEW*') {
+            foreach ($dataFromClient['data'] as $rN => $row) {
+                $row = (array)$row;
+                $row = array_values($row);
+                foreach ($row as $cN => $column) {
+                    $cell = $worksheet->getCell([$cN + 1, $rN + 1]);
+                    if (is_array($column)) {
+                        switch ($column['type'] ?? null) {
+                            case 'image':
+                                $add_image($column['filestring'], $column['imagetype'], $cell->getCoordinate());
+                                break;
+                            default:
+                                $val = $column['v'] ?? '';
+                        }
+                        $style = $cell->getStyle();
+                        $style->applyFromArray($column['f']);
+                    } else {
+                        $val = $column;
+                    }
+                    $cell->setValue($val);
+                }
+            }
+        } else {
+            $dataVars = [];
+            $dataRows = [];
+            foreach ($dataFromClient['data'] as $k => $v) {
+                if (is_array($v) && !key_exists('type', $v)) {
+                    if (key_exists('0', $v) && is_array($v[0])) {
+                        $dataRows[$k] = $v;
+                    } else {
+                        $error = 'Parameter ' . $k . ' is wrong formatted';
+                    }
+                } else {
+                    $dataVars[$k] = $v;
+                }
+            }
+            $rowsIterator = $worksheet->getRowIterator(0, null);
+            $replaceValuesInRow = function (Row $row, $isRowDuplicating = false, $rowsVals = []) use ($add_image, &$rowsIterator, &$replaceValuesInRow, &$dataRows, $worksheet, $dataVars) {
+                $iterator = $row->getCellIterator();
+                $iterator->setIterateOnlyExistingCells(true);
+                foreach ($iterator as $cell) {
+                    if ($cell !== null) {
+                        /** @var Cell $cell */
+                        $val = $cell->getValue();
+
+                        if (preg_match('/\$\{([^ }]+)\}/', $val, $match)) {
+                            $varName = $match[1];
+
+
+                            if (!$isRowDuplicating && key_exists($varName, $dataRows)) {
+                                $oldRowIndex = $row->getRowIndex();
+
+                                $rowData = [];
+                                $iterator2 = $row->getCellIterator();
+                                $iterator2->setIterateOnlyExistingCells(true);
+                                $rowHeight = $worksheet->getRowDimension($row->getRowIndex())->getRowHeight();
+                                foreach ($iterator2 as $_cell) {
+                                    $style = new PhpOffice\PhpSpreadsheet\Style\Style();
+                                    $style->applyFromArray($_cell->getStyle()->exportArray());
+                                    $rowData[] = [$_cell->getColumn(), $_cell->getValue(), $style, $rowHeight];
+                                }
+
+
+                                foreach ($dataRows[$varName] as $k => $rowsVals) {
+
+                                    $worksheet->insertNewRowBefore($oldRowIndex + $k, 1);
+
+                                    /** @var Row $newRow */
+                                    $newRow = new Row($worksheet, $oldRowIndex + $k);
+                                    $row = new Row($worksheet, $oldRowIndex + $k + 1);
+
+                                    foreach ($rowData as $cellData) {
+                                        $newCell = $worksheet->getCell($cellData[0] . $newRow->getRowIndex());
+                                        $newCell->setValue($cellData[1]);
+                                        $worksheet->duplicateStyle($cellData[2], $cellData[0] . $newRow->getRowIndex());
+                                        $worksheet->getRowDimension($newRow->getRowIndex())->setRowHeight($cellData[3]);
+                                    }
+
+                                    $replaceValuesInRow($newRow, true, $rowsVals);
+                                    $rowsIterator->next();
+
+                                }
+                                unset($dataRows[$varName]);
+                                $worksheet->removeRow($row->getRowIndex(), 1);
+                                $rowsIterator->prev();
+                                $rowsIterator->resetEnd();
+                                return;
+                            } else {
+                                $vars = $dataVars;
+                                if ($isRowDuplicating) {
+                                    $vars += $rowsVals;
+                                }
+
+                                $complexObject = null;
+                                $val = preg_replace_callback('/\$\{([^ }]+)\}/',
+                                    function ($matches) use (&$complexObject, $vars) {
+                                        $_val = $vars[$matches[1]] ?? null;
+                                        if (is_array($_val)) {
+                                            $complexObject = $_val;
+                                            return '';
+                                        } else {
+                                            return $_val;
+                                        }
+                                    },
+                                    $val);
+                                if ($complexObject) {
+                                    switch ($complexObject['type'] ?? null) {
+                                        case 'image':
+                                            $cell->setValue('');
+                                            $add_image($complexObject, $cell->getCoordinate());
+                                            break;
+                                        default:
+                                            $cell->setValue($complexObject['v'] ?? '');
+                                    }
+                                } else {
+                                    $cell->setValue($val);
+                                }
+
+                            }
+                        }
+                    }
+                }
+                return;
+            };
+
+
+            while ($rowsIterator->valid()) {
+                $row = $rowsIterator->current();
+                $replaceValuesInRow($row, false, []);
+                $rowsIterator->next();
+            }
+        }
+
+        $writer = IOFactory::createWriter($spreadsheet, 'Xlsx');
+        if ($dataFromClient['template'] === '*NEW*') {
+            $writer->setPreCalculateFormulas(false);
+        }
+        $resultFile = $Conf->create_tmp_file('../tmp_files', 'xlsx_result_', 'xlsx', $accountNumber, $cutHash);
+        $writer->save($resultFile);
+
+        if ($pdf) {
+            `libreoffice --headless --convert-to pdf:calc_pdf_Export --outdir ../tmp_files $resultFile`;
+            $resultFile = preg_replace('/(\.xlsx)$/', '.pdf', $resultFile);
+
+            /*$writer = new \services\common\ExcelMpdf($spreadsheet);
+            $resultFile = $Conf->create_tmp_file('../tmp_files', 'xlsx_result_', 'pdf', $accountNumber, $cutHash);*/
+
+        }
+    }
+} catch (\Exception $e) {
+    $error = $e->getMessage();
+}
+
+
+list($back_url_answer, $response_header) = $Conf->sendAnswer($back_url,
+    $checkSsl,
+    $hash,
+    $error ?? null,
+    $resultFile ?? null,
+    $answer_key_path);
+
+$Conf->billing($accountNumber,
+    $serviceType,
+    $back_url_answer,
+    $response_header,
+    $error ?? null,
+    !!($pdf) && empty($error),
+    $comment);

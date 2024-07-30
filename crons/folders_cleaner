@@ -1,0 +1,17 @@
+#!/usr/bin/env php
+<?php
+
+
+$dirs = [__DIR__ . '/../tmp_files', __DIR__ . '/../http/fls'];
+foreach ($dirs as $dir) {
+    if (is_dir($dir)) {
+        if ($dh = opendir($dir)) {
+            while (($file = readdir($dh)) !== false) {
+                if (is_file($fName = $dir . '/' . $file) && strlen($file) > 20 && fileatime($fName) < time() - 3600) {
+                    unlink($fName);
+                }
+            }
+            closedir($dh);
+        }
+    }
+}

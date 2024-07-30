@@ -1,0 +1,22 @@
+{
+  "name": "totumonline/totum-services",
+  "type": "project",
+  "license": "PRO",
+  "minimum-stability": "dev",
+  "php": "^8.3",
+  "require": {
+    "totumonline/phpspreadsheet": "dev-master"
+  },
+  "repositories": [
+    {
+      "type": "github",
+      "url": "https://github.com/totumonline/phpspreadsheet/"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "services\\": "./",
+      "services\\config\\": "./"
+    }
+  }
+}
