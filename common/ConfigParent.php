@@ -41,7 +41,7 @@ class ConfigParent
         $settings = [];
         foreach (file($filepath) ?: throw new \Exception("Settings file not accessible") as $i => $line) {
             $line = trim($line);
-            if ($line[0] === '#') {
+            if (!strlen($line) || $line[0] === '#') {
                 continue;
             }
 
