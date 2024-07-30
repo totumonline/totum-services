@@ -100,9 +100,12 @@ switch ($service) {
 
         $file = tempnam('../tmp_files', 'data_' . substr($inputData['hash'], 0, 16));
         file_put_contents($file, $serviceData);
-        fwrite(fopen('../services_log', 'a'), date("H:i ").$service.' '.json_encode($inputData, JSON_UNESCAPED_UNICODE));
-        echo `cd ../services && ./{$service} < {$file}`;
+        echo ($answer = `cd ../services && ./{$service} < {$file}`);
 
+        if($answer){
+            $inputData["answer"] = $answer;
+        }
+        $Conf->log($serviceData['number'], inputData: $inputData);
         break;
 }
 

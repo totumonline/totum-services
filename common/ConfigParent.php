@@ -52,8 +52,8 @@ class ConfigParent
             $_set2 = $_set;
             unset($_set2["number"]);
             $_set2 = array_intersect_key($_set2, ["key" => null, "back_url" => null, "check_back_url_certificate" => null]);
-            if(count($_set2)!=3){
-                throw new \Exception("Settings in $line ".($i+1)." don't contain all params");
+            if (count($_set2) != 3) {
+                throw new \Exception("Settings in $line " . ($i + 1) . " don't contain all params");
             }
             $settings[$_set["number"]] = $_set2;
         }
@@ -64,6 +64,7 @@ class ConfigParent
     {
         return $this->dir;
     }
+
     public function billing($accountNumber, $serviceType, $back_url_answer, $http_response_header, $error = null, $withPDF = false, $comment = null, $extraData = [])
     {
 
@@ -123,5 +124,14 @@ class ConfigParent
 
             $i++;
         }
+    }
+
+    public function log($number, $error = null, array $inputData = array())
+    {
+        if ($error) {
+            $error = 'ERROR: ' . $error;
+        }
+        fwrite(fopen('../services_log', 'a'), date("H:i ") . $number . ' ' . ($error ?: json_encode($inputData, JSON_UNESCAPED_UNICODE)));
+
     }
 }
