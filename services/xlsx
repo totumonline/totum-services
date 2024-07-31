@@ -249,7 +249,7 @@ try {
                         /** @var Cell $cell */
                         $val = $cell->getValue();
 
-                        if (preg_match('/\$\{([^ }]+)\}/', $val, $match)) {
+                        if ($val && preg_match('/\$\{([^ }]+)\}/', $val, $match)) {
                             $varName = $match[1];
 
 
