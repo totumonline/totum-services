@@ -3,4 +3,4 @@ services_list
 services_log
 /vendor/
 /tmp_files/*
-/services/fls/
+/http/fls/*
