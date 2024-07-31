@@ -30,7 +30,7 @@ if (($dirs[1] ?? false) === 'connectChecker') {
     if ($error) {
         $answer['error'] = $error;
     } else {
-        $answer['number'] = $settings;
+        $answer['number'] = 'OK';
     }
 
     echo json_encode($answer, JSON_UNESCAPED_UNICODE);

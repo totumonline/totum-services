@@ -126,12 +126,12 @@ class ConfigParent
         }
     }
 
-    public function log($number, $error = null, array $inputData = array())
+    public function log($number, $error = null, $string = null, array $inputData = array())
     {
         if ($error) {
             $error = 'ERROR: ' . $error;
         }
-        fwrite(fopen('../services_log', 'a'), date("H:i ") . $number . ' ' . ($error ?: json_encode($inputData, JSON_UNESCAPED_UNICODE)));
+        fwrite(fopen('../services_log', 'a'), date("H:i ") . $number . ' ' . ($string?: $error ?: json_encode($inputData, JSON_UNESCAPED_UNICODE)));
 
     }
 }
