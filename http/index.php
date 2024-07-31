@@ -102,6 +102,15 @@ switch ($service) {
         file_put_contents($file, $serviceData);
         echo ($answer = `cd ../services && ./{$service} < {$file}`);
 
+        $inputDataForLog = $inputData;
+        if ($inputDataForLog['data']['file']??false){
+            $inputDataForLog['data']['file'] = '--';
+        }
+        if ($inputDataForLog['data']['filestring']??false){
+            $inputDataForLog['data']['filestring'] = '--';
+        }
+
+
         if($answer){
             $inputData["answer"] = $answer;
         }
