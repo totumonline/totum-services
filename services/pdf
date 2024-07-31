@@ -11,6 +11,13 @@ use services\config\Conf;
 use Dompdf\Dompdf;
 
 
+$configIniFile = dirname(__FILE__).'/../CLI.totum.php.ini';
+
+$configIni = parse_ini_file($configIniFile);
+foreach ($configIni as $key => $value) {
+    ini_set($key, $value);
+}
+
 require_once '../vendor/autoload.php';
 
 $serviceType = 'pdf';
