@@ -12,7 +12,7 @@ class CustomContentLoader implements \Mpdf\File\LocalContentLoaderInterface, \Ps
         throw new \Exception('Loading resources from file system denied');
     }
 
-    public function setLogger(LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger): void
     {
         // TODO: Implement setLogger() method.
     }
