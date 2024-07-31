@@ -114,7 +114,7 @@ switch ($service) {
         if($answer){
             $inputData["answer"] = $answer;
         }
-        $Conf->log($inputData['number'], inputData: $inputData);
+        $Conf->log($inputData['number'], inputData: $inputDataForLog);
         break;
 }
 

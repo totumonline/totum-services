@@ -77,7 +77,7 @@ class ConfigParent
             $Data['data']['error'] = $error ?? 'Generation error';
         } else {
             rename($resultFile, str_replace('../tmp_files', '../http/fls', $resultFile));
-            $Data['data']['link'] = 'https://' . $this->host . '/' . preg_replace('/^(.*)\/([^\/]+)$/',
+            $Data['data']['link'] = 'https://' . $this->host . '/fls/' . preg_replace('/^(.*)\/([^\/]+)$/',
                     '$2',
                     $resultFile);
         }
@@ -103,6 +103,8 @@ class ConfigParent
         $back_url_answer = file_get_contents($back_url . '/ServicesAnswer' . ($answer_key_path ? '/' . $answer_key_path : ''),
             false,
             $context);
+
+        $this->log($back_url . '/ServicesAnswer' . ($answer_key_path ? '/' . $answer_key_path: ''), inputData: $Data);
 
         if ($back_url_answer === false) {
             $back_url_answer = error_get_last();
@@ -131,7 +133,7 @@ class ConfigParent
         if ($error) {
             $error = 'ERROR: ' . $error;
         }
-        fwrite(fopen('../services_log', 'a'), date("H:i ") . $number . ' ' . ($string?: $error ?: json_encode($inputData, JSON_UNESCAPED_UNICODE)));
+        fwrite(fopen('../services_log', 'a'), "\n".date("H:i ") . $number . ' ' . ($string?: $error ?: json_encode($inputData, JSON_UNESCAPED_UNICODE)));
 
     }
 }
