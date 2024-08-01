@@ -109,6 +109,9 @@ switch ($service) {
         if ($inputDataForLog['data']['filestring']??false){
             $inputDataForLog['data']['filestring'] = '--';
         }
+        if ($inputDataForLog['data']['template']??false){
+            $inputDataForLog['data']['template'] = '--';
+        }
 
 
         if($answer){
