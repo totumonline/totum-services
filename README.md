@@ -10,19 +10,9 @@ Server requirements depend on the load, but we recommend at least 2C 2Gb.
 sudo curl -O https://raw.githubusercontent.com/totumonline/totum-mit/master/totum/moduls/install/totum_services_autoinstall.sh && sudo bash totum_services_autoinstall.sh
 ```
 
-During the installation process, you will need to enter the **data (username and email) of your GitHub user** (who has access to this repository). The installer will generate an SSH key for the server, which needs to be added to [https://github.com/settings/keys](https://github.com/settings/keys) on GitHub for the corresponding user.
-
-Key format:
-
-```
-ssh-ed25519 AAAAC3NzaC1JSDYSGJDAAAII1xBM65sdrDUEll6AeQwd2Cszn80IoA9Bpk8g5 some@email.com
-```
-
 The server configuration is done via Ansible, so if there are errors during the installation process (e.g., lack of network between the server and repositories), you can rerun the installation script, and you will be prompted to continue the installation.
 
-Totum V4 can only be connected to an installation with a domain and SSL certificate (automatically obtained by the installation script if a valid domain is available).
-
-Totum V5 can work with services both over SSL and without, via IP. If the services are installed via IP (without a domain), you need to disable certificate verification on the Totum side as shown below.
+Totum V5 and later can work with services both over SSL and without, via IP. If the services are installed via IP (without a domain), you need to disable certificate verification on the Totum side as shown below.
 
 ```
 nano /home/totum/totum-mit/Conf.php
