@@ -3,13 +3,11 @@
   "type": "project",
   "license": "PRO",
   "minimum-stability": "dev",
-  "php": "^8.3",
   "require": {
     "shuchkin/simplexlsx": "dev-master",
     "phpoffice/phpword": "dev-master",
     "totumonline/phpspreadsheet": "dev-master",
     "mpdf/mpdf": "dev-development",
-    "tecnickcom/tcpdf": "dev-main",
     "dompdf/dompdf": "dev-master"
   },
   "repositories": [
