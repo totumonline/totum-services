@@ -2,12 +2,12 @@
 
 ## Service Installation
 
-The installation is done on a clean Ubuntu 24.04. This should be a separate server from the Totum installation!
+The installation is done on a clean Ubuntu 26.04. This should be a separate server from the Totum installation!
 
 Server requirements depend on the load, but we recommend at least 2C 2Gb.
 
 ```
-sudo curl -O https://raw.githubusercontent.com/totumonline/totum-mit/master/totum/moduls/install/totum_services_autoinstall.sh && sudo bash totum_services_autoinstall.sh
+sudo curl -O https://raw.githubusercontent.com/totumonline/totum-pro/pro/totum/moduls/install/totum_services_autoinstall.sh && sudo bash totum_services_autoinstall.sh
 ```
 
 The server configuration is done via Ansible, so if there are errors during the installation process (e.g., lack of network between the server and repositories), you can rerun the installation script, and you will be prompted to continue the installation.
@@ -15,7 +15,7 @@ The server configuration is done via Ansible, so if there are errors during the 
 Totum V5 and later can work with services both over SSL and without, via IP. If the services are installed via IP (without a domain), you need to disable certificate verification on the Totum side as shown below.
 
 ```
-nano /home/totum/totum-mit/Conf.php
+nano /home/totum/totum-pro/Conf.php
 ```
 
 Add the following line after `protected $execSSHOn`:
