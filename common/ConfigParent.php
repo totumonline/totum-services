@@ -82,6 +82,7 @@ class ConfigParent
                     $resultFile);
         }
         $Data['hash'] = $hash;
+        $back_url = rtrim($back_url, '/');
 
 
         $context = stream_context_create(
@@ -103,6 +104,7 @@ class ConfigParent
         $back_url_answer = file_get_contents($back_url . '/ServicesAnswer' . ($answer_key_path ? '/' . $answer_key_path : ''),
             false,
             $context);
+        $response_headers = http_get_last_response_headers();
 
         $this->log($back_url . '/ServicesAnswer' . ($answer_key_path ? '/' . $answer_key_path: ''), inputData: $Data);
 
@@ -110,7 +112,7 @@ class ConfigParent
             $back_url_answer = error_get_last();
         }
 
-        return [$back_url_answer, $http_response_header];
+        return [$back_url_answer, $response_headers];
     }
 
     public

@@ -92,7 +92,7 @@ switch ($service) {
                 'number' => $inputData['number'],
                 'back_url' => $accountData['back_url'],
                 'answer_key_path' => '',
-                'checkSSl' => $accountData['check_back_url_certificate'] === 'true',
+                'checkSSl' => filter_var($accountData['check_back_url_certificate'], FILTER_VALIDATE_BOOLEAN),
                 'data' => $inputData['data'],
                 'hash' => $inputData['hash'],
                 'host' => $_SERVER['HTTP_HOST'],

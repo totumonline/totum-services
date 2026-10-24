@@ -8,7 +8,6 @@ use services\common\CustomContentLoader;
 use services\common\CustomHttpClient;
 use services\common\WordMPDF;
 use services\config\Conf;
-use Dompdf\Dompdf;
 
 
 $configIniFile = dirname(__FILE__).'/../CLI.totum.php.ini';

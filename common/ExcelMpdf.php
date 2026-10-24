@@ -9,7 +9,7 @@ class ExcelMpdf extends \PhpOffice\PhpSpreadsheet\Writer\Pdf\Mpdf
     protected array $PDFOptions = [];
     protected $MPDF = null;
 
-    protected function createExternalWriterInstance($config)
+    protected function createExternalWriterInstance(array $config): \Mpdf\Mpdf
     {
         if ($this->PDFOptions['format'] ?? false) {
             $config['format'] = $this->PDFOptions['format'];
@@ -20,7 +20,7 @@ class ExcelMpdf extends \PhpOffice\PhpSpreadsheet\Writer\Pdf\Mpdf
             ]));
     }
 
-    private function inchesToMm($inches)
+    private function inchesToMm(float $inches): float
     {
         return $inches * 25.4;
     }
@@ -63,7 +63,7 @@ class ExcelMpdf extends \PhpOffice\PhpSpreadsheet\Writer\Pdf\Mpdf
 
 
 
-        $html = $this->generateHTMLAll($setup->getPrintArea());
+        $html = $this->generateHTMLAll();
         $pdf->WriteHTML($html);
 
         //  Write to file

@@ -4,18 +4,10 @@
   "license": "PRO",
   "minimum-stability": "dev",
   "require": {
-    "shuchkin/simplexlsx": "dev-master",
     "phpoffice/phpword": "dev-master",
-    "totumonline/phpspreadsheet": "dev-master",
-    "mpdf/mpdf": "dev-development",
-    "dompdf/dompdf": "dev-master"
+    "phpoffice/phpspreadsheet": "^5.10",
+    "mpdf/mpdf": "dev-development"
   },
-  "repositories": [
-    {
-      "type": "github",
-      "url": "https://github.com/totumonline/phpspreadsheet/"
-    }
-  ],
   "autoload": {
     "psr-4": {
       "services\\": "./",
